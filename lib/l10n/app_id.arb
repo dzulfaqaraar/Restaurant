@@ -1,0 +1,102 @@
+{
+    "titleApp": "Restaurant Kekinian",
+    "@titleApp": {
+        "description": "Deskripsi mengenai title Aplikasi"
+    },
+    "home": "Beranda",
+    "@home": {
+        "description": "Deskripsi navigation menu home"
+    },
+    "favorite": "Favorit",
+    "@favorite": {
+        "description": "Deskripsi navigation menu favorite"
+    },
+    "about": "Tentang",
+    "@about": {
+        "description": "Deskripsi navigation menu tentang"
+    },
+    "food": "Makanan",
+    "@food": {
+        "description": "Deskripsi navigation menu makanan"
+    },
+    "drink": "Minuman",
+    "@drink": {
+        "description": "Deskripsi navigation menu minuman"
+    },
+    "review": "Ulasan",
+    "@review": {
+        "description": "Deskripsi navigation menu ulasan"
+    },
+    "search": "cari menu atau nama...",
+    "@search": {
+        "description": "Deskripsi hint pada search bar"
+    },
+    "noData": "Data kosong",
+    "@noData": {
+        "description": "Deskripsi ketika halaman tidak memiliki data"
+    },
+    "location": "Lokasi",
+    "@location": {
+        "description": "Deskripsi mengenai lokasi kota restaurant"
+    },
+    "address": "Alamat",
+    "@address": {
+        "description": "Deskripsi mengenai lokasi alamat restaurant"
+    },
+    "rating": "Peringkat",
+    "@rating": {
+        "description": "Deskripsi mengenai rating restaurant"
+    },
+    "description": "Keterangan",
+    "@description": {
+        "description": "Deskripsi mengenai keterangan restaurant"
+    },
+    "failedToLoad": "Gagal menampilkan data",
+    "@failedToLoad": {
+        "description": "Deskripsi mengenai status gagal menampilkan data"
+    },
+    "setting": "Pengaturan",
+    "@setting": {
+        "description": "Deskripsi mengenai judul halaman pengaturan"
+    },
+    "language": "Bahasa",
+    "@language": {
+        "description": "Deskripsi mengenai pengaturan bahasa"
+    },
+    "reviewTitle": "Tulis ulasanmu",
+    "@reviewTitle": {
+        "description": "Deskripsi mengenai judul pada dialog ulasan"
+    },
+    "reviewName": "Nama",
+    "@reviewName": {
+        "description": "Deskripsi mengenai nama pemberi ulasan"
+    },
+    "reviewMessage": "Ketik disini...",
+    "@reviewMessage": {
+        "description": "Deskripsi mengenai isi pesan ulasan"
+    },
+    "reviewNext": "Lanjut",
+    "@reviewNext": {
+        "description": "Deskripsi mengenai tombol selanjutnya pada dialog ulasan"
+    },
+    "reviewButton": "Kirim",
+    "@reviewButton": {
+        "description": "Deskripsi mengenai tombol kirim pada dialog ulasan"
+    },
+    "noConnection": "Tidak ada koneksi internet",
+    "@noConnection": {
+        "description": "Deskripsi mengenai koneksi internet"
+    },
+    "dailyReminder": "Pengingat Harian",
+    "@dailyReminder": {
+        "description": "Deskripsi mengenai pengingat harian"
+    },
+    "restaurantNotification": "Notifikasi Restaurant",
+    "@restaurantNotification": {
+        "description": "Deskripsi mengenai nofitikasi restaurant"
+    },
+    "restaurantInfo": "Rekomendasi restaurant untukmu",
+    "@restaurantInfo": {
+        "description": "Deskripsi mengenai pesan dalam nofitikasi restaurant"
+    }
+}
