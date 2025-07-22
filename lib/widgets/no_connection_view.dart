@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 
 import '../common/common.dart';
+import '../l10n/app_localizations.dart';
 
 class NoConnectionView extends StatelessWidget {
-  const NoConnectionView({Key? key}) : super(key: key);
+  const NoConnectionView({super.key});
 
   @override
   Widget build(BuildContext context) {

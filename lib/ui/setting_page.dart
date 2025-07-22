@@ -8,7 +8,7 @@ import '../provider/setting_provider.dart';
 
 class SettingPage extends StatefulWidget {
   static const routeName = '/setting';
-  const SettingPage({Key? key}) : super(key: key);
+  const SettingPage({super.key});
 
   @override
   State<SettingPage> createState() => _SettingPageState();
@@ -23,17 +23,22 @@ class _SettingPageState extends State<SettingPage> {
     super.initState();
 
     Future.delayed(Duration.zero, () async {
-      setState(() {
-        Locale appLocale = Localizations.localeOf(context);
-        _selectedLanguage = appLocale.languageCode;
-      });
+      if (mounted) {
+        setState(() {
+          Locale appLocale = Localizations.localeOf(context);
+          _selectedLanguage = appLocale.languageCode;
+        });
 
-      final settingProvider =
-          Provider.of<SettingProvider>(context, listen: false);
-      final isEnabled = await settingProvider.isDailyRestaurantEnabled();
-      setState(() {
-        _isDailyReminderEnable = isEnabled;
-      });
+        final settingProvider =
+            Provider.of<SettingProvider>(context, listen: false);
+        final isEnabled = await settingProvider.isDailyRestaurantEnabled();
+        
+        if (mounted) {
+          setState(() {
+            _isDailyReminderEnable = isEnabled;
+          });
+        }
+      }
     });
   }
 
@@ -85,7 +90,7 @@ class _SettingPageState extends State<SettingPage> {
                     ),
                     Switch.adaptive(
                       value: _isDailyReminderEnable,
-                      onChanged: _remiderChanged,
+                      onChanged: _reminderChanged,
                     ),
                   ],
                 ),
@@ -116,7 +121,7 @@ class _SettingPageState extends State<SettingPage> {
               children: [
                 Text(
                   localeFlag,
-                  style: myTextTheme.headline6,
+                  style: myTextTheme.headlineSmall,
                 ),
                 const SizedBox(width: 8),
                 Expanded(
@@ -142,12 +147,12 @@ class _SettingPageState extends State<SettingPage> {
               ],
             ),
           );
-        }).toList(),
+        }),
       ],
     );
   }
 
-  void _remiderChanged(bool value) {
+  void _reminderChanged(bool value) {
     setState(() {
       _isDailyReminderEnable = value;
     });

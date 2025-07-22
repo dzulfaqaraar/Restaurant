@@ -5,9 +5,9 @@ class RatingView extends StatelessWidget {
   final num? rating;
 
   const RatingView({
-    Key? key,
+    super.key,
     required this.rating,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

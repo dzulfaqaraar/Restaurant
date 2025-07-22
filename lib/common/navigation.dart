@@ -10,7 +10,7 @@ class Navigation {
   static notificationWithData(String routeName, {Object? arguments}) {
     navigatorKey.currentState?.pushNamedAndRemoveUntil(
       routeName,
-      (route) => false,
+      (route) => route.settings.name == '/home',
       arguments: arguments,
     );
   }

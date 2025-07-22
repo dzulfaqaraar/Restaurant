@@ -32,7 +32,7 @@ void main() {
         .toList();
 
     when(mockConnectivity.checkConnectivity())
-        .thenAnswer((_) async => ConnectivityResult.mobile);
+        .thenAnswer((_) async => [ConnectivityResult.mobile]);
     when(mockApiService.listRestaurant())
         .thenAnswer((_) async => restaurantList);
 
@@ -42,5 +42,48 @@ void main() {
     // assert
     expect(provider.state, RequestState.data);
     expect(provider.restaurantResult, restaurantList);
+  });
+
+  test('should return connection state when no internet connection', () async {
+    // arrange
+    when(mockConnectivity.checkConnectivity())
+        .thenAnswer((_) async => [ConnectivityResult.none]);
+
+    // act
+    await provider.fetchListRestaurant();
+
+    // assert
+    expect(provider.state, RequestState.connection);
+    expect(provider.restaurantResult, []);
+  });
+
+  test('should return error state when fetchListRestaurant throws exception', () async {
+    // arrange
+    when(mockConnectivity.checkConnectivity())
+        .thenAnswer((_) async => [ConnectivityResult.mobile]);
+    when(mockApiService.listRestaurant())
+        .thenThrow(Exception('Network error'));
+
+    // act
+    await provider.fetchListRestaurant();
+
+    // assert
+    expect(provider.state, RequestState.error);
+    expect(provider.restaurantResult, []);
+  });
+
+  test('should return empty state when restaurant list is empty', () async {
+    // arrange
+    when(mockConnectivity.checkConnectivity())
+        .thenAnswer((_) async => [ConnectivityResult.mobile]);
+    when(mockApiService.listRestaurant())
+        .thenAnswer((_) async => []);
+
+    // act
+    await provider.fetchListRestaurant();
+
+    // assert
+    expect(provider.state, RequestState.empty);
+    expect(provider.restaurantResult, []);
   });
 }

@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:pull_to_refresh/pull_to_refresh.dart';
 
 import '../common/common.dart';
 import '../common/navigation.dart';
@@ -16,16 +15,14 @@ import '../widgets/no_connection_view.dart';
 import '../widgets/rating_view.dart';
 import 'restaurant_page.dart';
 import 'setting_page.dart';
+import 'alarm_page.dart';
 
 class HomePage extends StatefulWidget {
   static const routeName = '/home';
 
   final String? restaurantId;
 
-  const HomePage({
-    Key? key,
-    this.restaurantId,
-  }) : super(key: key);
+  const HomePage({super.key, this.restaurantId});
 
   @override
   State<HomePage> createState() => _HomePageState();
@@ -37,17 +34,14 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
   final _searchController = TextEditingController();
   final FocusNode focusNode = FocusNode();
 
-  final RefreshController _refreshControllerHome =
-      RefreshController(initialRefresh: false);
-  final RefreshController _refreshControllerFavorite =
-      RefreshController(initialRefresh: false);
-
   late TabController _tabController;
   int _tabIndex = 0;
   List<Tab> _tabs = [
     const Tab(icon: Icon(Icons.home), text: ''),
     const Tab(icon: Icon(Icons.star), text: ''),
+    const Tab(icon: Icon(Icons.alarm), text: ''),
   ];
+
   void _onTabTapped(int index) {
     setState(() {
       _tabIndex = index;
@@ -66,14 +60,13 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
           icon: const Icon(Icons.star),
           text: AppLocalizations.of(context)?.favorite,
         ),
+        Tab(icon: const Icon(Icons.alarm), text: 'Alarm'),
       ];
     });
   }
 
-  void _onRefresh() async {
+  Future<void> _onRefresh() async {
     if (_tabIndex == 0) {
-      _refreshControllerHome.refreshCompleted();
-
       final homeProvider = Provider.of<HomeProvider>(context, listen: false);
 
       if (customIcon.icon == Icons.cancel) {
@@ -82,9 +75,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
       } else {
         homeProvider.fetchListRestaurant();
       }
-    } else {
-      _refreshControllerFavorite.refreshCompleted();
-
+    } else if (_tabIndex == 1) {
       final favoriteProvider = Provider.of<FavoriteProvider>(
         context,
         listen: false,
@@ -96,22 +87,28 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
         favoriteProvider.getAllRestaurants();
       }
     }
+    // No refresh functionality needed for alarm tab (index 2)
   }
 
   void _onSearch(String text) {
     if (_tabIndex == 0) {
-      Provider.of<HomeProvider>(context, listen: false)
-          .searchRestaurant(keywordSearch: text);
-    } else {
-      Provider.of<FavoriteProvider>(context, listen: false)
-          .getAllRestaurantsByName(text);
+      Provider.of<HomeProvider>(
+        context,
+        listen: false,
+      ).searchRestaurant(keywordSearch: text);
+    } else if (_tabIndex == 1) {
+      Provider.of<FavoriteProvider>(
+        context,
+        listen: false,
+      ).getAllRestaurantsByName(text);
     }
+    // No search functionality for alarm tab (index 2)
   }
 
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 2, vsync: this);
+    _tabController = TabController(length: 3, vsync: this);
 
     Future.delayed(Duration.zero, () {
       if (widget.restaurantId != null) {
@@ -152,14 +149,17 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
       appBar: AppBar(
         title: customSearchBar,
         actions: [
-          _searchIcon(),
+          if (_tabIndex != 2)
+            _searchIcon() // Hide search for alarm tab
+          else
+            SizedBox.shrink(),
           if (customIcon.icon == Icons.search)
             IconButton(
               onPressed: () {
                 Navigation.intentWithData(SettingPage.routeName);
               },
               icon: const Icon(Icons.settings),
-            )
+            ),
         ],
         bottom: TabBar(
           controller: _tabController,
@@ -167,7 +167,11 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
           onTap: _onTabTapped,
         ),
       ),
-      body: _tabIndex == 0 ? _homeContent() : _favoriteContent(),
+      body: _tabIndex == 0
+          ? _homeContent()
+          : _tabIndex == 1
+          ? _favoriteContent()
+          : const AlarmPage(),
     );
   }
 
@@ -178,11 +182,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
           if (customIcon.icon == Icons.search) {
             customIcon = const Icon(Icons.cancel);
             customSearchBar = ListTile(
-              leading: const Icon(
-                Icons.search,
-                color: Colors.white,
-                size: 28,
-              ),
+              leading: const Icon(Icons.search, color: Colors.white, size: 28),
               title: TextField(
                 controller: _searchController,
                 focusNode: focusNode,
@@ -207,12 +207,17 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
             _searchReset();
 
             if (_tabIndex == 0) {
-              Provider.of<HomeProvider>(context, listen: false)
-                  .fetchListRestaurant();
-            } else {
-              Provider.of<FavoriteProvider>(context, listen: false)
-                  .getAllRestaurants();
+              Provider.of<HomeProvider>(
+                context,
+                listen: false,
+              ).fetchListRestaurant();
+            } else if (_tabIndex == 1) {
+              Provider.of<FavoriteProvider>(
+                context,
+                listen: false,
+              ).getAllRestaurants();
             }
+            // No fetch needed for alarm tab (index 2)
           }
         });
       },
@@ -231,21 +236,17 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
     return Consumer<HomeProvider>(
       builder: (context, data, child) {
         if (data.state == RequestState.loading) {
-          return const Center(
-            child: CircularProgressIndicator(),
-          );
+          return const Center(child: CircularProgressIndicator());
         } else {
-          return SmartRefresher(
-            enablePullDown: true,
-            controller: _refreshControllerHome,
+          return RefreshIndicator(
             onRefresh: _onRefresh,
             child: data.state == RequestState.data
                 ? _listRestaurant(data.restaurantResult)
                 : data.state == RequestState.connection
-                    ? const NoConnectionView()
-                    : data.state == RequestState.error
-                        ? const FailedDataView()
-                        : const EmptyDataView(),
+                ? const NoConnectionView()
+                : data.state == RequestState.error
+                ? const FailedDataView()
+                : const EmptyDataView(),
           );
         }
       },
@@ -256,13 +257,9 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
     return Consumer<FavoriteProvider>(
       builder: (context, data, child) {
         if (data.state == RequestState.loading) {
-          return const Center(
-            child: CircularProgressIndicator(),
-          );
+          return const Center(child: CircularProgressIndicator());
         } else {
-          return SmartRefresher(
-            enablePullDown: true,
-            controller: _refreshControllerFavorite,
+          return RefreshIndicator(
             onRefresh: _onRefresh,
             child: data.favoriteResult.isNotEmpty
                 ? _listRestaurant(data.favoriteResult)
@@ -286,9 +283,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                 arguments: restaurant.id,
               );
             },
-            borderRadius: const BorderRadius.all(
-              Radius.circular(10),
-            ),
+            borderRadius: const BorderRadius.all(Radius.circular(10)),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [

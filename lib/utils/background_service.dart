@@ -1,4 +1,3 @@
-import 'dart:io';
 import 'dart:isolate';
 import 'dart:math';
 
@@ -6,7 +5,6 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:http/http.dart' as http;
 
 import '../data/api/api_service.dart';
-import '../main.dart';
 import '../provider/setting_provider.dart';
 import 'notification_helper.dart';
 
@@ -24,7 +22,6 @@ class BackgroundService {
   factory BackgroundService() => _instance ?? BackgroundService._internal();
 
   static Future<void> callback() async {
-    HttpOverrides.global = MyHttpOverrides();
     final apiService = ApiService(client: http.Client());
     final listRestaurant = await apiService.listRestaurant();
     final randomIndex = Random().nextInt(listRestaurant.length);
@@ -35,7 +32,6 @@ class BackgroundService {
     final bodyNotification = prefs.getString(dailyInfoPrefs) ?? '';
 
     await _notificationHelper.showNotification(
-      flutterLocalNotificationsPlugin,
       randomRestaurant,
       bodyNotification,
     );

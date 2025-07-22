@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:pull_to_refresh/pull_to_refresh.dart';
 
 import '../common/common.dart';
 import '../common/navigation.dart';
@@ -11,6 +10,7 @@ import '../data/model/restaurant.dart';
 import '../data/model/review.dart';
 import '../provider/favorite_provider.dart';
 import '../provider/restaurant_provider.dart';
+import '../provider/reminder_provider.dart';
 import '../widgets/empty_data_view.dart';
 import '../widgets/failed_data_view.dart';
 import '../widgets/no_connection_view.dart';
@@ -21,9 +21,9 @@ class RestaurantPage extends StatefulWidget {
   final String restaurantId;
 
   const RestaurantPage({
-    Key? key,
+    super.key,
     required this.restaurantId,
-  }) : super(key: key);
+  });
 
   @override
   State<RestaurantPage> createState() => _RestaurantPageState();
@@ -33,11 +33,10 @@ class _RestaurantPageState extends State<RestaurantPage> {
   int _bottomNavIndex = 0;
   int _reviewStep = 1;
   bool isFavorited = false;
+  bool hasReminder = false;
 
   final _reviewNameController = TextEditingController();
   final _reviewMessageController = TextEditingController();
-  final RefreshController _refreshController =
-      RefreshController(initialRefresh: false);
 
   List<BottomNavigationBarItem> _bottomNavBarItems = [
     const BottomNavigationBarItem(
@@ -97,20 +96,22 @@ class _RestaurantPageState extends State<RestaurantPage> {
     });
   }
 
-  void _onRefresh() async {
-    _refreshController.refreshCompleted();
+  Future<void> _onRefresh() async {
+    final restaurantProvider = Provider.of<RestaurantProvider>(context, listen: false);
+    final favoriteProvider = Provider.of<FavoriteProvider>(context, listen: false);
+    final reminderProvider = Provider.of<ReminderProvider>(context, listen: false);
+    
+    restaurantProvider.loadDetailRestaurant(widget.restaurantId);
 
-    Provider.of<RestaurantProvider>(context, listen: false)
-        .loadDetailRestaurant(widget.restaurantId);
+    final favorited = await favoriteProvider.getRestaurantById(widget.restaurantId);
+    final hasActiveReminder = await reminderProvider.hasActiveReminderForRestaurant(widget.restaurantId);
 
-    final favorited = await Provider.of<FavoriteProvider>(
-      context,
-      listen: false,
-    ).getRestaurantById(widget.restaurantId);
-
-    setState(() {
-      isFavorited = favorited;
-    });
+    if (mounted) {
+      setState(() {
+        isFavorited = favorited;
+        hasReminder = hasActiveReminder;
+      });
+    }
   }
 
   @override
@@ -161,15 +162,19 @@ class _RestaurantPageState extends State<RestaurantPage> {
           );
         } else {
           return Scaffold(
-            body: SmartRefresher(
-              enablePullDown: true,
-              controller: _refreshController,
+            body: RefreshIndicator(
               onRefresh: _onRefresh,
-              child: data.stateData == RequestState.connection
-                  ? const NoConnectionView()
-                  : data.stateData == RequestState.error
-                      ? const FailedDataView()
-                      : const EmptyDataView(),
+              child: CustomScrollView(
+                slivers: [
+                  SliverFillRemaining(
+                    child: data.stateData == RequestState.connection
+                        ? const NoConnectionView()
+                        : data.stateData == RequestState.error
+                            ? const FailedDataView()
+                            : const EmptyDataView(),
+                  ),
+                ],
+              ),
             ),
           );
         }
@@ -193,7 +198,7 @@ class _RestaurantPageState extends State<RestaurantPage> {
       flexibleSpace: FlexibleSpaceBar(
         title: Text(
           restaurant.name ?? '',
-          style: myTextTheme.headline6,
+          style: myTextTheme.headlineSmall,
         ),
         expandedTitleScale: 1,
         centerTitle: true,
@@ -231,7 +236,7 @@ class _RestaurantPageState extends State<RestaurantPage> {
                       topLeft: Radius.circular(20),
                       topRight: Radius.circular(20),
                     ),
-                    color: secondaryColor.withOpacity(0.9),
+                    color: secondaryColor.withValues(alpha: 0.9),
                   ),
                 ),
               ),
@@ -240,6 +245,13 @@ class _RestaurantPageState extends State<RestaurantPage> {
         ),
       ),
       actions: [
+        IconButton(
+          onPressed: () => _showReminderDialog(restaurant),
+          icon: Icon(
+            hasReminder ? Icons.alarm : Icons.alarm_add,
+            color: hasReminder ? Colors.orange : null,
+          ),
+        ),
         IconButton(
           onPressed: () async {
             final status = await Provider.of<FavoriteProvider>(
@@ -392,7 +404,7 @@ class _RestaurantPageState extends State<RestaurantPage> {
         return AlertDialog(
           title: Text(
             AppLocalizations.of(context)?.reviewTitle ?? '',
-            style: myTextTheme.apply(bodyColor: primaryColor).headline6,
+            style: myTextTheme.apply(bodyColor: primaryColor).headlineSmall,
           ),
           content: SingleChildScrollView(
             child: Column(
@@ -404,7 +416,7 @@ class _RestaurantPageState extends State<RestaurantPage> {
                     decoration: InputDecoration(
                       hintText: AppLocalizations.of(context)?.reviewName,
                     ),
-                    style: myTextTheme.apply(bodyColor: primaryColor).bodyText1,
+                    style: myTextTheme.apply(bodyColor: primaryColor).bodyLarge,
                     onSubmitted: (text) {},
                   ),
                 if (_reviewStep == 2)
@@ -414,7 +426,7 @@ class _RestaurantPageState extends State<RestaurantPage> {
                     decoration: InputDecoration(
                       hintText: AppLocalizations.of(context)?.reviewMessage,
                     ),
-                    style: myTextTheme.apply(bodyColor: primaryColor).bodyText1,
+                    style: myTextTheme.apply(bodyColor: primaryColor).bodyLarge,
                     onSubmitted: (text) {},
                   ),
               ],
@@ -454,5 +466,156 @@ class _RestaurantPageState extends State<RestaurantPage> {
         );
       },
     );
+  }
+
+  Future<void> _showReminderDialog(Restaurant restaurant) async {
+    final reminderProvider = Provider.of<ReminderProvider>(context, listen: false);
+    final existingReminder = await reminderProvider.getReminderByRestaurantId(widget.restaurantId);
+    
+    if (existingReminder != null) {
+      _showEditReminderDialog(restaurant, existingReminder);
+    } else {
+      _showAddReminderDialog(restaurant);
+    }
+  }
+
+  Future<void> _showAddReminderDialog(Restaurant restaurant) async {
+    TimeOfDay? selectedTime = await showTimePicker(
+      context: context,
+      initialTime: TimeOfDay.now(),
+    );
+
+    if (selectedTime != null && mounted) {
+      final reminderProvider = Provider.of<ReminderProvider>(context, listen: false);
+      final success = await reminderProvider.addReminder(
+        restaurantId: widget.restaurantId,
+        restaurantName: restaurant.name ?? 'Unknown Restaurant',
+        hour: selectedTime.hour,
+        minute: selectedTime.minute,
+        notificationMessage: 'Time to visit ${restaurant.name}!',
+      );
+
+      if (success && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Reminder set for ${selectedTime.format(context)}'),
+            backgroundColor: Colors.green,
+          ),
+        );
+        setState(() {
+          hasReminder = true;
+        });
+      } else if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(reminderProvider.message),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _showEditReminderDialog(Restaurant restaurant, reminder) async {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(
+          'Restaurant Reminder',
+          style: myTextTheme.apply(bodyColor: primaryColor).headlineSmall,
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              'Current reminder time: ${reminder.timeString}',
+              style: myTextTheme.apply(bodyColor: primaryColor).bodyLarge,
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'What would you like to do?',
+              style: myTextTheme.apply(bodyColor: primaryColor).bodyMedium,
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigation.back();
+              _editReminderTime(restaurant, reminder);
+            },
+            child: const Text('Edit Time'),
+          ),
+          TextButton(
+            onPressed: () async {
+              Navigation.back();
+              await _deleteReminder(reminder.id);
+            },
+            child: const Text('Delete', style: TextStyle(color: Colors.red)),
+          ),
+          TextButton(
+            onPressed: () => Navigation.back(),
+            child: const Text('Cancel'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _editReminderTime(Restaurant restaurant, reminder) async {
+    TimeOfDay? selectedTime = await showTimePicker(
+      context: context,
+      initialTime: TimeOfDay(hour: reminder.hour, minute: reminder.minute),
+    );
+
+    if (selectedTime != null && mounted) {
+      final reminderProvider = Provider.of<ReminderProvider>(context, listen: false);
+      final success = await reminderProvider.updateReminder(
+        id: reminder.id,
+        hour: selectedTime.hour,
+        minute: selectedTime.minute,
+        notificationMessage: 'Time to visit ${restaurant.name}!',
+      );
+
+      if (success && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Reminder updated to ${selectedTime.format(context)}'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      } else if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(reminderProvider.message),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _deleteReminder(int reminderId) async {
+    final reminderProvider = Provider.of<ReminderProvider>(context, listen: false);
+    final success = await reminderProvider.deleteReminder(reminderId);
+
+    if (success && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Reminder deleted'),
+          backgroundColor: Colors.green,
+        ),
+      );
+      setState(() {
+        hasReminder = false;
+      });
+    } else if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(reminderProvider.message),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
   }
 }

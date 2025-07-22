@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 
 import '../common/common.dart';
+import '../l10n/app_localizations.dart';
 
 class FailedDataView extends StatelessWidget {
-  const FailedDataView({Key? key}) : super(key: key);
+  const FailedDataView({super.key});
 
   @override
   Widget build(BuildContext context) {

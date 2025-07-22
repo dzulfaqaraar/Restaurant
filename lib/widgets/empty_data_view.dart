@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 
 import '../common/common.dart';
+import '../l10n/app_localizations.dart';
 
 class EmptyDataView extends StatelessWidget {
-  const EmptyDataView({Key? key}) : super(key: key);
+  const EmptyDataView({super.key});
 
   @override
   Widget build(BuildContext context) {

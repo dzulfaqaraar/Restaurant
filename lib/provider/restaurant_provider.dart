@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 
 import '../common/common.dart';
+import '../l10n/app_localizations.dart';
 import '../common/request_state.dart';
 import '../data/api/api_service.dart';
 import '../data/model/add_review.dart';
@@ -32,8 +33,8 @@ class RestaurantProvider extends ChangeNotifier {
 
     try {
       final connectionStatus = await connectivity.checkConnectivity();
-      if (!(connectionStatus == ConnectivityResult.wifi ||
-          connectionStatus == ConnectivityResult.mobile)) {
+      if (!(connectionStatus.contains(ConnectivityResult.wifi) ||
+          connectionStatus.contains(ConnectivityResult.mobile))) {
         _stateData = RequestState.connection;
         notifyListeners();
         return;
@@ -62,8 +63,8 @@ class RestaurantProvider extends ChangeNotifier {
 
     try {
       final connectionStatus = await connectivity.checkConnectivity();
-      if (!(connectionStatus == ConnectivityResult.wifi ||
-          connectionStatus == ConnectivityResult.mobile)) {
+      if (!(connectionStatus.contains(ConnectivityResult.wifi) ||
+          connectionStatus.contains(ConnectivityResult.mobile))) {
         _stateSubmit = RequestState.connection;
         notifyListeners();
         return;

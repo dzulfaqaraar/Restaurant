@@ -1,10 +1,7 @@
-import 'package:android_alarm_manager_plus/android_alarm_manager_plus.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import '../main.dart';
-import '../ui/restaurant_page.dart';
-import '../utils/background_service.dart';
+import '../utils/alarm_helper.dart';
 import '../utils/date_time_helper.dart';
 import '../utils/notification_helper.dart';
 
@@ -33,28 +30,25 @@ class SettingProvider extends ChangeNotifier {
   }
 
   void initNotifications() async {
-    await _notificationHelper.initNotifications(
-      flutterLocalNotificationsPlugin,
-    );
+    await _notificationHelper.initNotifications();
   }
 
   void setSchedule(BuildContext context, bool isEnabled) async {
     if (isEnabled) {
       _notificationHelper.configureSelectNotificationSubject(
         context,
-        RestaurantPage.routeName,
+        '/restaurant',
       );
 
-      await AndroidAlarmManager.periodic(
-        const Duration(hours: 24),
-        dailyRestaurantId,
-        BackgroundService.callback,
-        startAt: DateTimeHelper.format(),
-        exact: true,
-        wakeup: true,
+      // Schedule daily reminder at the formatted time
+      final scheduledTime = DateTimeHelper.format();
+      await AlarmHelper.scheduleRestaurantReminder(
+        id: dailyRestaurantId,
+        restaurantName: 'Daily Restaurant Reminder',
+        dateTime: scheduledTime,
       );
     } else {
-      await AndroidAlarmManager.cancel(dailyRestaurantId);
+      await AlarmHelper.cancelAlarm(dailyRestaurantId);
       _notificationHelper.closeStream();
     }
 

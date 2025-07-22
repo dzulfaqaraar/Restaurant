@@ -1,4 +1,5 @@
 {
+    "appName": "Restoran",
     "titleApp": "Restaurant Kekinian",
     "@titleApp": {
         "description": "Deskripsi mengenai title Aplikasi"

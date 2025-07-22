@@ -46,8 +46,8 @@ class HomeProvider extends ChangeNotifier {
 
     try {
       final connectionStatus = await connectivity.checkConnectivity();
-      if (!(connectionStatus == ConnectivityResult.wifi ||
-          connectionStatus == ConnectivityResult.mobile)) {
+      if (!(connectionStatus.contains(ConnectivityResult.wifi) ||
+          connectionStatus.contains(ConnectivityResult.mobile))) {
         _state = RequestState.connection;
         notifyListeners();
         return;
